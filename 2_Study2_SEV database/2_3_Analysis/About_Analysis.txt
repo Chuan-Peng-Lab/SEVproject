@@ -1,0 +1,13 @@
+|---2_3_1_data_bids 
+|---------2_3_1_1_RawData_for_preprocessing  原始数据备份版，以此进行下一步操作
+|-----------------SEV01_original  第一部分原始数据
+|-----------------SEV02_original  第二部分原始数据
+|---------2_3_1_2_data  存放从原始数据到最后标准化数据的数据集及处理代码
+|-----------------process_data  清洗整理后的数据
+|-----------------study2_code  数据处理的程序代码
+|---2_3_2_Script
+|---------2_3_2_1_figures 存放论文中生成的图
+|-----------------words_classification_bar_chart  词语维度分类图(7种类别)
+|-----------------words_classification_bar_chart_partial_enlarge  维度分类图的局部放大
+|-----------------radar_and_violin  各维度词语的维度评分情况雷达图与效价评分小提琴图
+  

@@ -1,0 +1,5 @@
+|---2_2_RawData
+|-------SEV01_original  第一部分原始数据(13道检测题)
+|-------SEV02_original  第二部分原始数据(3道检测题)
+|-------study_data_problem.txt  记录了实验中关于被试数据的一些问题
+

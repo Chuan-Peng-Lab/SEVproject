@@ -1,0 +1,4 @@
+|------1_2_RawData 原始数据
+|----------Stage_1_word_collection_raw_en  词汇收集原始数据
+|----------Stage_2_Ratings_42_words_from_Cui_Wang_words  额外选取42个词汇评分结果
+|----------Stage_3_71_words_rating_processing_raw  71个词汇的评分

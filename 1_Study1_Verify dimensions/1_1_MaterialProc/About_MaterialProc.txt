@@ -1,0 +1,6 @@
+|---1_2_1_Procedure  实验程序
+|---------1_1_1_1_Words_collection  词汇收集
+|-----------------all_words_word_collection  初步收集的所有词汇
+|-----------------42_words_from_Cui_Wang_words  额外从王登峰、崔红书里收集的42个词汇
+|---------1_1_1_2_Preliminary_rating  初级评分
+|-----------------71_words_preliminary_rating  从各维度选择7个词语+漂亮

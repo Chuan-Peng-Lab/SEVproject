@@ -1,0 +1,12 @@
+|-------1_3_1_Data_bids [Standardized_Data]
+|-------------1_3_1_1_RawData_for_preprocessing 原始数据备份版，以此进行下一步操作
+|---------------------Stage_1_word_collection_raw_en  词汇收集原始数据
+|---------------------Stage_2_Ratings_42_words_from_Cui_Wang_words  额外选取42个词汇评分结果
+|---------------------Stage_3_71_words_rating_processing_raw  71个词汇的评分
+|-------------1_3_1_2_data  存放从原始数据到最后标准化数据的数据集及处理代码
+|---------------------42_words_rating_results_from_Cui_Wang  42个词汇的评分结果
+|---------------------71_words_rating_results  71个词汇的评分结果
+|---------------------study1_code  数据分析代码
+|--------1_3_2_Script
+|--------------1_3_2_1_figures  生成的结果图
+|----------------------71_words_preliminary_rating

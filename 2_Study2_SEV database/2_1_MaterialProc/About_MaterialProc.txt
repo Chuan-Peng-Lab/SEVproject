@@ -1,0 +1,6 @@
+|---2_1_1_Procedure  实验程序
+|---------2_1_1_1_Experiment_words.xlsx  实验所使用的全部词汇
+|---------2_1_1_2_SEV_instructions.docx  实验指导语
+|---------2_1_1_3_Attention_questions  实验所使用的注意力检测题
+|---------2_1_1_4_JsPsych_procedure  Jspsych程序
+
