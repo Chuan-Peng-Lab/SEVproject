@@ -49,11 +49,21 @@ This is a repo for [**The Chinese Social Evaluative Word List**](https://psyarxi
 ```
 
 ## Software required to open or run any of the shared files
-This project used JsPschy to present stimuli and collect, R 4.3.1 for behavioral data analyses and graphic visualization
-
-## License
-CC-BY 4.0 [default]
+This project used [JsPschy](https://www.jspsych.org) to present stimuli stimuli and collect data, [R 4.3.1](https://www.r-project.org/) for behavioral data analyses and graphic visualization.
 
 ## Contact
-* Li Lulu, email: lll@njnu.edu.cn
-* Hu Chuan-Peng (Prof., Dr.), email: hcp4715@hotmail.com
+* Li Lulu, Nanjing Normal University, Email: lll@njnu.edu.cn
+* Hu Chuan-Peng, Nanjing Normal University, Email: hcp4715@hotmail.com
+  
+
+## 
+[![CC BY 4.0][cc-by-shield]][cc-by]
+
+This work is licensed under a
+[Creative Commons Attribution 4.0 International License][cc-by].
+
+[![CC BY 4.0][cc-by-image]][cc-by]
+
+[cc-by]: http://creativecommons.org/licenses/by/4.0/
+[cc-by-image]: https://i.creativecommons.org/l/by/4.0/88x31.png
+[cc-by-shield]: https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg
