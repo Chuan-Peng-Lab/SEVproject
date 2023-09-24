@@ -6,76 +6,40 @@ This is a repo for [**The Chinese Social Evaluative Word List**](https://psyarxi
 ## Folder structure
 
 ```
-|-root_dir
-|---1_Study1_Verify dimensions
-|---1_1_MaterialProc
-|-------About_MaterialProc.txt
-|-------1_1_1_Procedure
-|-------------1_1_1_1_Words_collection
-|---------------------all_words_word_collection
-|---------------------42_words_from_Cui_Wang_words
-|-------------1_1_1_2_Preliminary_rating
-|---------------------71_words_preliminary_rating
-|---1_2_RawData
-|-------About_RawData.txt
-|-------RawData
-|-------------Stage_1_word_collection_raw_en  
-|-------------Stage_2_Ratings_42_words_from_Cui_Wang_words 
-|-------------Stage_3_71_words_rating_processing_raw 
-|---1_3_Analaysis
-|-------About_Analysis.txt
-|-------1_3_1_Data_bids [Standardized_Data]
-|-------------1_3_1_1_RawData_for_preprocessing[convert raw data to standardized data]
-|---------------------Stage_1_word_collection_raw_en  
-|---------------------Stage_2_Ratings_42_words_from_Cui_Wang_words 
-|---------------------Stage_2_Ratings_42_words_from_Cui_Wang_words 
-|---------------------Stage_3_71_words_rating_processing_raw 
-|-------------1_3_1_2_data[converted data]
-|---------------------42_words_rating_results_from_Cui_Wang
-|---------------------71_words_rating_results
-|---------------------study1_code
-|-------1_3_2_Script
-|-------------1_3_2_1_figures
-|---------------------71_words_preliminary_rating
-|
-|---2_Study2_SEV database
-|---2_1_MaterialProc
-|-------About_MaterialProc.txt
-|-------2_1_1_Procedure
-|-------------2_1_1_1_Experiment_words.xlsx
-|-------------2_1_1_2_SEV_instructions.docx
-|-------------2_1_1_3_Attention_questions
-|-------------2_1_1_4_JsPsych_procedure
-|---2_2_RawData
-|-------About_RawData.txt
-|-------SEV01_original
-|-------SEV02_original
-|-------study_data_problem.txt
-|---2_3_Analaysis
-|-------About_Analysis.txt
-|-------2_3_1_Data_bids [Standardized_Data]
-|-------------2_3_1_1_RawData_for_preprocessing[convert raw data to standardized data]
-|---------------------SEV01_original
-|---------------------SEV02_original
-|-------------2_3_1_2_data[converted data]
-|---------------------process_data
-|---------------------study2_code
-|--------2_3_2_Script
-|--------------2_3_2_1_figures
-|---------------------words_classification_bar_chart
-|---------------------words_classification_bar_chart_partial_enlarge
-|---------------------radar_and_violin
-|---SEV_wordlist
-|
-|---3_Reports
-|-----About_Reports.txt
-|-----3_1_Project_reports
-|---------report_ppt(2023.1.13)
-|---------report_ppt(2023.07.06)
-|-----3_2_Conference
-|-----3_3_Manuscript
-|
-|---ReadMe.txt
+.
+├── 1_Study1_Pilot
+│   ├── 1_1_MaterialProc
+│   │   ├── 1_1_1_Procedure
+│   │   └── About_MaterialProc.txt
+│   ├── 1_2_RawData
+│   │   ├── About_RawData.txt
+│   │   └── RawData
+│   └── 1_3_Analysis
+│       ├── 1_3_1_Data
+│       ├── 1_3_2_Script
+│       └── About_Analysis.txt
+├── 2_Study2_SEV
+│   ├── 2_1_MaterialProc
+│   │   ├── 2_1_1_Procedure
+│   │   └── About_MaterialProc.txt
+│   ├── 2_2_RawData
+│   │   ├── About_RawData.txt
+│   │   ├── SEV01_RawData
+│   │   ├── SEV01_original.csv.zip
+│   │   ├── SEV02_RawData
+│   │   ├── SEV02_original.zip.001
+│   │   ├── SEV02_original.zip.002
+│   │   ├── SEV02_original.zip.003
+│   │   ├── rawdata_connect.r
+│   │   └── study_data_problem.txt
+│   ├── 2_3_Analysis
+│   │   ├── 2_3_1_Data
+│   │   ├── 2_3_2_Script
+│   │   └── About_Analysis.txt
+│   └── SEV_wordlist.xlsx  ## this is the final wordlist
+├── 3_Reports
+│   └── About_Reports.txt
+└── ReadMe.md
 
 ```
 
