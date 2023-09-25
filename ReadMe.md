@@ -50,7 +50,7 @@ The word list will soon be available at science data bank: https://doi.org/10.57
 ```
 
 ## Software required to open or run any of the shared files
-This project used [JsPsych](https://www.jspsych.org) to present stimuli stimuli and collect data, [R 4.3.1](https://www.r-project.org/) for behavioral data analyses and graphic visualization.
+This project used [JsPsych 6.3.0](https://www.jspsych.org) to present stimuli stimuli and collect data, [R 4.3.1](https://www.r-project.org/) for behavioral data analyses and graphic visualization.
 
 ## Contact
 * Li Lulu, Nanjing Normal University, Email: lll@njnu.edu.cn
