@@ -2,6 +2,7 @@
 
 This is a repo for [**The Chinese Social Evaluative Word List**](https://psyarxiv.com/9cm7z/).
 
+The word list will soon be available at science data bank: https://doi.org/10.57760/sciencedb.11640
 
 ## Folder structure
 
