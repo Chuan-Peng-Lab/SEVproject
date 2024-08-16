@@ -11,6 +11,10 @@ library(showtext)
 library(ggforce)
 library(gghalves)
 library(cowplot)
+library(broom)
+library(multcomp)
+library(nlme)
+library(boot)
 ```
 
 # import data
@@ -88,6 +92,7 @@ raw_data2_final<- raw_data2 %>% dplyr::filter(!(subj_idx %in% c(raw_data2_auto,r
 # Total data after cleaning
 ```{r Total data after cleaning}
 process_data<-rbind(raw_data1_final,raw_data2_final)
+process_data <- process_data %>% mutate(word = trimws(word))  #remove leading and trailing whitespace from a string
 ```
 
 # Information of participants
@@ -250,31 +255,75 @@ word_score_average<- ave %>%
   ) 
 new_order<-c("word","appearance_mean","appearance_sd","socioEconomicStatus_mean","socioEconomicStatus_sd","socialAbility_mean","socialAbility_sd","ability_mean","ability_sd","morality_mean","morality_sd","val_mean","val_sd")
 word_score_average<-word_score_average %>% select(new_order) %>% as.data.frame()
+
+dimension_columns<-c("appearance_mean","socioEconomicStatus_mean","socialAbility_mean","ability_mean","morality_mean")
+filtered_words_average <- word_score_average %>%
+  rowwise() %>%
+  filter(all(c_across(all_of(dimension_columns)) <= 5))
+
+filtered_words_list <- filtered_words_average$word
+filtered_words_sev <- ave %>%
+  filter(!(word %in% filtered_words_list))
 ```
 
-## words list based on average ratings (marked with valence)
-```{r words list based on average ratings}
-word_total_info_av<-ave %>% dplyr::filter(
-    dimensionEn != "val",mean > 5) %>%
-  rename(dimension = dimensionEn) %>%
-  dplyr::mutate(
-    val_mean = word_score_average$val_mean[
-      word_score_average$word == word
-    ],
-    val_sd = word_score_average$val_sd[
-      word_score_average$word == word
-    ],valence = ifelse(val_mean > 5, "Positive", ifelse(val_mean < 5, "Negative", "Neutral"))
-  )
+## 2.statistical tests
+```{r statistical tests}
+aov_data_ori<-process_data %>% dplyr::filter(
+  is.na(validity),
+  isTrap == F, word %in% filtered_words_sev$word
+) %>% dplyr::select(
+  subj_idx, word, dimensionEn, rating
+) 
+aov_data_ori$dimensionEn <- as.factor(aov_data_ori$dimensionEn)
+
+result_list <- list()
+words <- unique(aov_data_ori$word)
+for (word in words) {
+  subset_df <- aov_data_ori %>% filter(word == !!word)
+  lme_model <- lme(rating ~ dimensionEn, random = ~ 1 | subj_idx, data = subset_df)
+  
+  anova_result <- anova(lme_model)
+    if (anova_result['dimensionEn','p-value'] < 0.05) {
+        # Significant effect: conduct post-hoc test
+        tukey_test <- glht(lme_model, linfct = mcp(dimensionEn = "Tukey"))
+        summary_tukey <- summary(tukey_test)
+        
+        tukey_df <- cbind(
+            Word = word,
+            Comparison = rownames(summary_tukey$test$coefficients),
+            Estimate = summary_tukey$test$coefficients,
+            p_value = summary_tukey$test$pvalues
+        )
+        result_list[[length(result_list) + 1]] <- tukey_df
+    } else {
+        # No significant effect: record basic info
+        no_effect_df <- data.frame(
+            Word = word,
+            Comparison = NA,
+            Estimate = NA,
+            p_value = NA
+        )
+        result_list[[length(result_list) + 1]] <- no_effect_df
+    }
+}
+  
+ final_results <- do.call(rbind, result_list)
+ final_results <- data.frame(
+    Dimension = rownames(final_results),  
+    final_results
+)
+ write.csv(final_results, "t_test_results.csv", row.names = FALSE)
 ```
 
-## 2.Count-based categorization
-```{r Count-based categorization}
-process_data %>% dplyr::filter(
-  is.na(rating),is.na(validity))
+## 3.Count-based
+```{r Count-based}
+###aov_wordlist: word list compiled from Step 2 results
+aov_wordlist <- read.csv("./aov_wordlist.csv",header = T,encoding="UTF-8")  
 
-### all participants' ratings in 1312 words
+### all participants' ratings in 1134 words
+aov_wordlist_filter <- aov_wordlist %>% filter(dimension_fin != "ambiguity")
 process_data_filter <- process_data %>% dplyr::filter(
-  word %in% unique(word_total_info_av$word),
+  word %in% unique(aov_wordlist_filter$word),
   dimensionEn != "")
 
 ### Number of raters per word
@@ -394,14 +443,15 @@ corresponds to Fig.5 in the article
 ```{r Bar chart,warning=FALSE}
 #### 1.rank
 for (i in seq(1, length(tmp3$word), 1)) {
-  tmp3$max_dimension[i] = tmp3$belong_to[
-    tmp3$word == tmp3$word[i] & tmp3$effective_degree == max(
-      tmp3$effective_degree[
-        tmp3$word == tmp3$word[i]
-      ]
-    )
-  ]
+  max_indices <- which(tmp3$word == tmp3$word[i] & tmp3$effective_degree == max(tmp3$effective_degree[tmp3$word == tmp3$word[i]]))
+
+if (length(max_indices) > 1) {
+    tmp3$max_dimension[i] <- "ambiguity"
+  } else {
+    tmp3$max_dimension[i] <- tmp3$belong_to[max_indices]
+  }
 }
+
 tmp4 <- tmp3 %>% dplyr::nest_by(
   word
 ) %>% dplyr::mutate(
@@ -410,6 +460,7 @@ tmp4 <- tmp3 %>% dplyr::nest_by(
 ) %>% dplyr::select(-data) %>% dplyr::arrange(
   max_dimension, max_values
 )
+
 tmp3$word <- factor(tmp3$word, unique(tmp4$word))
 tmp3$belong_to <- factor(tmp3$belong_to, levels = c(
   "appearance", "socioEconomicStatus","socialAbility","ability", "morality", 
@@ -419,14 +470,18 @@ tmp3$belong_to <- factor(tmp3$belong_to, levels = c(
 #### 2.draw
 showtext_auto()
 belong_to_name <- c(
-  `appearance` = "App",
-  `socioEconomicStatus` = "SES",
-  `socialAbility` = "Soc",
-  `ability` = "Com",
-  `morality` = "Mor",
-  `none` = "Out",
-  `ambiguity` = "Amb"
+  `appearance` = "Appearance",
+  `socioEconomicStatus` = "Socioeconomic status",
+  `socialAbility` = "Sociability",
+  `ability` = "Competence",
+  `morality` = "Morality",
+  `none` = "Non-five",
+  `ambiguity` = "Ambiguous"
 )
+
+tmp3 <- ungroup(tmp3) %>%
+  dplyr::filter(max_dimension %in% c("appearance", "socioEconomicStatus", "socialAbility", "ability", "morality"))
+
 tmp3$max_dimension <- factor(
   tmp3$max_dimension,
   levels = c("appearance", "socioEconomicStatus","socialAbility","ability", "morality","none","ambiguity"),
@@ -437,15 +492,15 @@ ggplot(data = tmp3, aes(x = word, y = effective_degree, fill = belong_to)) +
   scale_fill_manual(
   values=rev(c("#FF00AA","#00FF00","#3333ff",
               "#FF00FF","#FFFF00","#0099e6","#ff4d4d")),
-  labels=c("App","SES","Soc","Com","Mor","Out","Amb"),
+  labels=c("Appearance","Socioeconomic status","Sociability","Competence","Morality","Non-five","Ambiguous"),
   name = "Dimension") +
   labs(x="Words",y="Percentage") +
   theme(
     axis.text.x=element_text(angle = 90, colour = "black", hjust=1,size = 30),
-    axis.text.y=element_text(angle = 0, colour = "black", size = 60),axis.title.x = element_text(size=100),
-    axis.title.y = element_text(size=100),
-    legend.title = element_text(size=100),legend.text = element_text(size=80),
-    strip.text = element_text(size = 80),legend.key.width=unit(3,'cm')) + facet_wrap(~ max_dimension, nrow = 7, scale = "free")
+    axis.text.y=element_text(angle = 0, colour = "black", size = 80),axis.title.x = element_text(size=120),
+    axis.title.y = element_text(size=120),
+    legend.position = "none",
+    strip.text = element_text(size = 100)) + facet_wrap(~ max_dimension, nrow = 5, scale = "free")
 
 #### 3.partially enlarged (take the first 11 words of morality as example)
 tmp4Mor <- tmp4 %>% dplyr::filter(
@@ -456,11 +511,18 @@ tmp4Mor <- tmp4 %>% dplyr::filter(
 tmp3Mor <- as.data.frame(tmp3) %>% dplyr::filter(
   word %in% tmp4Mor$word[c(1:11)]
 )
-belong_to_name1 <- c('狼心狗肺'= "cruel and unscrupulous 狼心狗肺",'无恶不作' = "commit all manners of crimes 无恶不作",'善良'= "kind-hearted 善良",'伤风败俗'="immorality 伤风败俗",'孝顺'="obedient 孝顺",'黑心'='black-hearted 黑心','大逆不道'="rebellious 大逆不道",'忘恩负义'="ungrateful 忘恩负义",'丧尽天良'="unscrupulous 丧尽天良",'不孝'="unfilial 不孝",'缺德'="unethical 缺德")
+belong_to_name1 <- c('狼心狗肺' = "cruel and unscrupulous 狼心狗肺",
+                     '无恶不作' = "commit all manners of crimes 无恶不作",
+                     '善良' = "kind-hearted 善良",'伤风败俗'="immorality 伤风败俗",
+                     '孝顺'="obedient 孝顺",'黑心'='black-hearted 黑心',
+                     '大逆不道'="rebellious 大逆不道",
+                     '忘恩负义'="ungrateful 忘恩负义",'丧尽天良'="unscrupulous 丧尽天良",
+                     '不孝'="unfilial 不孝",'缺德'="unethical 缺德")
 
 tmp3Mor$word<-factor(
   tmp3Mor$word,
-  levels = c("狼心狗肺","无恶不作","善良","伤风败俗","孝顺","黑心","大逆不道", "忘恩负义","丧尽天良","不孝","缺德"),
+  levels = c("狼心狗肺","无恶不作","善良","伤风败俗","孝顺","黑心",
+             "大逆不道", "忘恩负义","丧尽天良","不孝","缺德"),
   labels = belong_to_name1
 )
 
@@ -468,7 +530,7 @@ ggplot(data = tmp3Mor, aes(x = word, y = effective_degree, fill = belong_to)) +
   geom_bar(position = "stack", stat = "identity", width = 0.6) +
   scale_fill_manual(
     values=rev(c("#FF00AA","#00FF00","#3333ff", "#FF00FF", "#FFFF00","#0099e6","#ff4d4d")),
-    labels=c("App","SES","Soc","Com","Mor","Out","Amb"),
+    labels=c("Appearance","Socioeconomic status","Sociability","Competence","Morality","Non-five","Ambiguous"),
     name = "Dimension"
   ) +
   labs(x="Words",y="Percentage") +
@@ -478,23 +540,21 @@ ggplot(data = tmp3Mor, aes(x = word, y = effective_degree, fill = belong_to)) +
     axis.title.y = element_text(size=130),
     legend.title = element_text(size=130),legend.text = element_text(size=100),
     strip.text = element_text(size = 100),legend.key.width=unit(3,'cm'))+
-    facet_wrap(~ max_dimension, nrow = 7, scale = "free")
+    facet_wrap(~ max_dimension, nrow = 5, scale = "free")
 ```
 
-### Words list based on count
-```{r Words list based on count}
+## Words list
+```{r Words list}
 tmp5 <- process_data %>% dplyr::filter(
   !is.na(validity)
 ) %>% dplyr::nest_by(
   word
 ) %>% dplyr::mutate(
-  mean_validity = mean(data$validity),sd_validity = sd(data$validity),
-  valence = ifelse(mean(data$validity) > 5, "Positive", ifelse(mean(data$validity) < 5, "Negative","Neurtal"))
+  mean_validity = mean(data$validity),sd_validity = sd(data$validity)
 ) %>% dplyr::select(-data)
 
 tmp6 <- tmp4 %>% dplyr::mutate(
-  mean_validity = tmp5$mean_validity[tmp5$word == word],sd_validity = tmp5$sd_validity[tmp5$word == word],
-  valence = tmp5$valence[tmp5$word == word]
+  mean_validity = tmp5$mean_validity[tmp5$word == word],sd_validity = tmp5$sd_validity[tmp5$word == word]
 )
 
 tmp6_1<-tmp6 %>% dplyr::filter(max_dimension %in% c("appearance","socioEconomicStatus","socialAbility","ability","morality"))
@@ -508,35 +568,69 @@ tmp7 <- process_data %>% dplyr::filter(
 
 # tmp8 is the last generated word list
 tmp8 <- tmp6_1 %>% left_join(tmp7, by = c("word" = "word"))
-tmp8<-tmp8[,c("word","max_dimension","dimensionEn","mean_rating", "sd_rating", "mean_validity", "sd_validity", "valence")]
+tmp8<-tmp8[,c("word","max_dimension","dimensionEn","mean_rating", "sd_rating", "mean_validity", "sd_validity")]
 tmp8<-tmp8 %>% pivot_wider(names_from =dimensionEn,values_from=c(mean_rating,sd_rating))
 ```
 
-### Radar chart and violin chart
+## valence classification——bootstrap
+```{r valence classification}
+set.seed(525)
+
+df_prepare <- process_data %>%
+  dplyr::filter(
+    !is.na(validity), 
+    isTrap == FALSE
+  ) %>%
+  dplyr::select(
+    subj_idx, Type, word, dimensionEn, validity
+  )
+
+bootstrap_function <- function(df_prepare, indices) {
+  sample_data <- df_prepare[indices, ]
+  mean(sample_data$validity)
+}
+
+unique_words <- unique(df_prepare$word)
+ci_results <- list()
+for (word in unique_words) {
+  word_data <- df_prepare[df_prepare$word == word,]
+  bootstrap_results <- boot(data = word_data, statistic = bootstrap_function, R = 5000, sim = "ordinary")
+  conf_interval <- boot.ci(bootstrap_results, type = "perc")
+  ci_results[[word]] <- conf_interval
+}
+
+ci_data <- data.frame(word=character(), lower=numeric(), upper=numeric(), stringsAsFactors=FALSE)
+for (word in names(ci_results)) {
+  ci <- ci_results[[word]]
+  lower_bound <- ci$percent[4]  
+  upper_bound <- ci$percent[5] 
+  ci_data <- rbind(ci_data, data.frame(word=word, lower=lower_bound, upper=upper_bound))
+}
+
+write.csv(ci_data, "confidence_intervals.csv", row.names=FALSE)
+```
+
+### valence violin chart
 corresponds to Fig.6 in the article
-```{r Radar chart and violin chart,warning=FALSE}
-# tmp9 is the data used for draw radar chart
-tmp9 <- tmp7 %>% dplyr::filter(word %in% tmp6$word) %>% dplyr::arrange(
-  dimensionEn)  
+```{r violin chart,warning=FALSE}
+#words_val_res:containing valence information and confidence intervals for each dimension's words 
+words_val_res <- read.csv("./words_val_res.csv",header = T,encoding="UTF-8")
+words_val_res$dimension <- as.factor(words_val_res$dimension)
+words_val_res$valence <- as.factor(words_val_res$valence)
 
-for_colors <- c(
-  "#ffcccc", "#99ff99",
-  "#ffcc80", "#eb99ff", "#9999ff"
-)
+valence_colors <- c("Positive" = "#ff6666",  
+                    "Neutral" = "#ffaf33",   
+                    "Negative" = "#6666ff")  
 
-colors <- c(
-  "#ff4d4d", "#4dff4d",
-  "#ffb74d", "#dc4dff", "#4d4dff"
-)
 
 for_list <- c(
   "appearance", "socioEconomicStatus",
-  "socialAbility", "ability", "morality"
+  "socialAbility", "competence", "morality"
 )
 
 for_x_title <- c(
-  "App words", "SES words",
-  "Soc words", "Com words", "Mor words"
+  "Appearance", "Socioeconomic status",
+  "Sociability", "Competence", "Morality"
 )
 
 get_color <- function(i) {
@@ -547,147 +641,42 @@ get_color <- function(i) {
   }
 }
 
-#### Violin charts
-violin_res <- list()
-for (i in seq_along(for_list)) {
-  violin <- ggplot(
-    tmp6_1[tmp6_1$max_dimension == for_list[i], ],
-    aes(
-      x = factor(max_dimension),
-      y = mean_validity, fill = factor(valence),color=factor(valence)
-    )
-  ) +
-    geom_half_violin(
-      side = "r",
-      position = position_nudge(x = 0, y = 0)
-    ) +
-    geom_half_point(show_guide = FALSE,
-                    position = position_nudge(x = 0, y = 0),
-                    side = "l",size = 4,
-                    alpha = 0.8
-    ) +
-    stat_summary(
-      geom = "point", fun.y = "mean", size = 7,
-      binaxis = "y", stackdir = "center",
-      position = position_nudge(x = 0, y = 0)
-    ) +
-    stat_summary(
-      geom = "errorbar", fun.data = "mean_cl_boot", width = 0.1,
-      position = position_nudge(x = 0, y = 0)
-    ) +
-    labs(x = for_x_title[i], y = "Rating", fill = "Valence") +
-    scale_fill_discrete(labels = c("Negative", "Positive"),type=c(colors[i],for_colors[i])) +
-    scale_color_discrete(type=c(colors[i],for_colors[i])) +
-    scale_y_continuous(limits = c(1, 9)) +
-    scale_x_discrete(labels = c(
-      "ability" = "Com",
-      "appearance" = "App", "morality" = "Mor",
-      "socialAbility" = "Soc", "socioEconomicStatus" = "SES"
-    )) +
-    theme(plot.title = element_text(hjust = 0.5)) +
-    theme_bw() +
-    theme(panel.grid.major = element_blank()) +
-    theme(panel.grid.minor = element_blank()) +
-    theme(panel.background = element_blank()) +
-    theme(axis.line = element_line(colour = "black")) +
-    theme(
-      axis.text.x = element_text(colour = "white", size = 80),
-      axis.title.x = element_text(size = 100),
-      axis.title.y = element_text(colour = get_color(i), size = 100),
-      axis.text.y = element_text(colour = get_color(i),
-                                 size = 80
-      ),
-      legend.title = element_text(size = 100),
-      legend.text = element_text(size = 80),
-      legend.position = "none"
-    )
-  violin_res[[i]] <- violin
-}
-
-#### Radar charts
-leida_res <- list()
-coord_radar <- function(theta = "x", start = 0, direction = 1) {
-  theta <- match.arg(theta, c("x", "y"))
-  r <- if (theta == "x") {
-    "y"
-  } else {
-    "x"
-  }
-  ggproto("CoordRadar", CoordPolar,
-          theta = theta, r = r, start = start,
-          direction = sign(direction),
-          is_linear = function(coord) TRUE
-  )
-}
+plot_data <- list()
 
 for (i in seq_along(for_list)) {
-  radardata1 <- tmp8 %>% dplyr::filter(max_dimension == for_list[i])
-  radardata2 <- tmp9 %>% dplyr::filter(word %in% radardata1$word)
-  c3 <- radardata2 %>%
-    dplyr::group_by(dimensionEn) %>%
-    dplyr::summarise(
-      mean = round(mean(mean_rating), 3),
-      sd = round(sd(mean_rating), 3)
-    ) %>%
-    dplyr::ungroup()
-  c3 <- c3 %>% dplyr::mutate(upper = mean + sd, lower = mean - sd)
-  c3$dimensionEn <- factor(c3$dimensionEn, levels = c(
-    "appearance", "socioEconomicStatus",
-    "socialAbility", "ability", "morality"
-  ), labels = c(
-    "App", "SES", "Soc", "Com", "Mor"
-  ))
-  c3 <- c3 %>% arrange(
-    dimensionEn
-  )
-  
-  leida <- ggplot(
-    data = c3,
-    aes(x = dimensionEn, y = mean, group = 1)
-  ) +
-    geom_polygon(aes(y = upper), fill = for_colors[i], alpha = 0.6) +
-    geom_polygon(aes(y = lower), fill = "#ffffff", alpha = 1) +
-    geom_polygon(fill = NA, colour = "#0d0d0d") +
-    theme_light() +
-    coord_radar() +
-    labs(x = for_x_title[i], y = "Mean rating") +
-    theme(
-      axis.text.x = element_text(angle = 10, colour = "black", size = 80),
-      axis.title.x = element_text(size = 100),
-      axis.title.y = element_text(colour = get_color(i), size = 100),
-      axis.text.y = element_text(colour = get_color(i), size = 80),
-      panel.background = element_rect(fill = "white", colour = "black"),
-      panel.grid.major = element_line(color = "grey", size = 0.3),
-      strip.text = element_text(size = 10),
-      axis.ticks.y = element_line(colour = get_color(i)),
-    ) +
-    scale_y_continuous(limits = c(0, 9))
-  leida_res[[i]] <- leida
+  data_subset <- words_val_res %>%
+    filter(dimension == for_list[i]) %>%
+    mutate(dimension = for_x_title[i])
+  plot_data[[i]] <- data_subset
 }
+ 
+combined_data <- do.call(rbind, plot_data)
 
-#### Radar + Violin
-pls_res <- list()
+violin_plot <- ggplot(combined_data, aes(x = dimension, y = (lower + upper) / 2, fill = valence, color = valence)) +
+  geom_point(data = combined_data %>% filter(valence == "Neutral"), size = 4) +
+  geom_half_violin(data = combined_data %>% filter(valence != "Neutral"), side = "r", position = position_nudge(x = 0, y = 0)) +
+  geom_half_point(data = combined_data %>% filter(valence != "Neutral"), side = "l", position = position_nudge(x = 0, y = 0), size = 4, alpha = 1) +
+  geom_hline(yintercept = 5, linetype = "dashed", color = "black", size = 1) +
+  scale_fill_manual(values = valence_colors) +
+  scale_color_manual(values = valence_colors) +
+  labs(y = "Average Rating", fill = "Valence") +
+  scale_y_continuous(limits = c(1, 9)) +
+  scale_x_discrete(limits = for_x_title) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black",size = 1),
+        axis.ticks = element_line(colour = "black", size = 1),
+        axis.ticks.length = unit(0.25, "cm"), 
+        axis.text.x = element_text(colour = "black", size = 65),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(colour = "black", size = 80),
+        axis.text.y = element_text(colour = "black", size = 65),
+        legend.title = element_text(size = 80),
+        legend.text = element_text(size = 65),
+        legend.position = "right") + 
+  guides(fill = guide_legend(title = "Valence"), color = guide_legend(title = "Valence"))
 
-for (i in seq_along(for_list)) {
-  aa <- plot_grid(
-    leida_res[[i]], violin_res[[i]],
-    nrow = 2, ncol = 1,
-    rel_heights = c(.4, .6)
-  )
-  pls_res[[i]] <- aa
-}
-
-radar_violin <- plot_grid(
-  pls_res[[1]],
-  pls_res[[2]],
-  pls_res[[3]],
-  pls_res[[4]],
-  pls_res[[5]],
-  ncol = 5,
-  align = "h",
-  axis = "b",
-  rel_widths = c(1, 1, 1, 1, 1))
-
-plot(radar_violin)
+plot(violin_plot)
 ```
-

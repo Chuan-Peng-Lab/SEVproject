@@ -87,7 +87,7 @@ df_rating_71_domain_frq <- df_rating_71_domain %>%
                       N_apprn = rowSums(.[col_subj_names] == 6),
                       N_soccl = rowSums(.[col_subj_names] == 7),
                       N_uncln = rowSums(.[col_subj_names] == 8)) %>%
-        select(words_id, N_moral:N_uncln) %>%
+        dplyr::select(words_id, N_moral:N_uncln) %>%
         arrange(match(words_id, row_word_id)) %>%
         dplyr::mutate(N_raters = rowSums( .[2:7] )) %>%
         dplyr::mutate(Moral_freq = round(N_moral/N_raters,2),
@@ -179,7 +179,7 @@ new_word_ord$domain_r <- factor(
   new_word_ord$domain_r,
   levels = c("Appearance","Wealth","Sociability","Competence",
              "Morality", "Unclear"),
-  labels = c("App", "SES", "Soc", "Com", "Mor", "Amb")
+  labels = c("Appearance","Socioeconomic status","Sociability","Competence","Morality","Ambiguous")
 )
 
 new_word_ord<-new_word_ord %>% dplyr::arrange(
@@ -195,7 +195,7 @@ tmp <- tmp %>%
     domain_r,
     levels = c("Appearance","Wealth","Sociability","Competence",
                "Morality", "Unclear"),
-    labels = c("App", "SES", "Soc", "Com", "Mor", "Amb")
+    labels = c("Appearance","Socioeconomic status","Sociability","Competence","Morality","Ambiguous")
   )) %>%
   dplyr::arrange(
     domain_r, -freq
@@ -214,8 +214,8 @@ tmp %>% ggplot2::ggplot(., aes(x=words, y=freq, fill=domain_r)) +
         axis.text.y=element_text(angle = 0, colour = "black", size = 65),
         axis.title.x = element_text(size=80),
         axis.title.y = element_text(size=80),
-        legend.title = element_text(size=80),legend.text = element_text(size=65),legend.key.width=unit(2,'cm'))+
-  scale_y_continuous(expand=c(0,0))+theme(plot.margin = margin(t = 60, r = 10, b = 10, l = 10, unit = "pt"))
+        legend.title = element_text(size=80),legend.text = element_text(size=65),legend.key.width=unit(2,'cm'))
+#scale_y_continuous(expand=c(0,0))+theme(plot.margin = margin(t = 60, r = 10, b = 10, l = 10, unit = "pt"))
 #theme_classic(axis.text.x = element_text(angle = 45, hjust = 1)) #+
 #facet_grid(. ~ domain_w )
 
