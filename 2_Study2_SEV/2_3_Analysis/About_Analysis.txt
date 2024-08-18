@@ -4,10 +4,12 @@
 |-----------------SEV02_original  第二部分原始数据
 |---------2_3_1_2_data  存放从原始数据到最后标准化数据的数据集及处理代码
 |-----------------process_data  清洗整理后的数据
-|-----------------study2_code  数据处理的程序代码
+|-----------------aov_wordlist  统计检验分类中所划分的各维度词汇
+|-----------------words_val_res 各维度词汇的效价信息
+|-----------------study2_code   数据处理的程序代码
 |---2_3_2_Script
 |---------2_3_2_1_figures 存放论文中生成的图
-|-----------------words_classification_bar_chart  词语维度分类图(7种类别)
+|-----------------words_classification_bar_chart  词语维度分类图
 |-----------------words_classification_bar_chart_partial_enlarge  维度分类图的局部放大
-|-----------------radar_and_violin  各维度词语的维度评分情况雷达图与效价评分小提琴图
+|-----------------valence_violin  各维度词语的效价评分小提琴图
   
